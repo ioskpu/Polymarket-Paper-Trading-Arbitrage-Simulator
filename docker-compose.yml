@@ -1,0 +1,79 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: arbitrage-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-arbitrage_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  market-scanner:
+    build:
+      context: ./services/market-scanner
+      dockerfile: Dockerfile
+    container_name: market-scanner
+    restart: unless-stopped
+    volumes:
+      - ./services/market-scanner:/app
+      - /app/node_modules
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/${DB_NAME:-arbitrage_db}
+      POLYMARKET_API_URL: ${POLYMARKET_API_URL:-https://clob.polymarket.com}
+    depends_on:
+      - db
+    command: npm run dev
+
+  strategy-engine:
+    build:
+      context: ./services/strategy-engine
+      dockerfile: Dockerfile
+    container_name: strategy-engine
+    restart: unless-stopped
+    volumes:
+      - ./services/strategy-engine:/app
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/${DB_NAME:-arbitrage_db}
+      PYTHONUNBUFFERED: 1
+    depends_on:
+      - db
+
+  paper-trading-engine:
+    build:
+      context: ./services/paper-trading-engine
+      dockerfile: Dockerfile
+    container_name: paper-trading-engine
+    restart: unless-stopped
+    volumes:
+      - ./services/paper-trading-engine:/app
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/${DB_NAME:-arbitrage_db}
+      PYTHONUNBUFFERED: 1
+    depends_on:
+      - db
+
+  dashboard:
+    build:
+      context: ./apps/dashboard
+      dockerfile: Dockerfile
+    container_name: dashboard
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./apps/dashboard:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/${DB_NAME:-arbitrage_db}
+      NEXT_PUBLIC_API_URL: http://localhost:3000/api
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
