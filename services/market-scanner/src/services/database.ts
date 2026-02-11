@@ -31,21 +31,23 @@ export class DatabaseService {
         const raw = rawMarkets[i];
 
         // 1. Idempotent write to 'markets' table
+        const conditionId = raw.condition_id || raw.conditionId || normalized.market_id;
+        const marketSlug = raw.market_slug || raw.slug || 'unknown-slug';
+
         await client.query(`
-          INSERT INTO markets (id, question, condition_id, slug, resolution_source, end_date_iso, active, updated_at)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)
+          INSERT INTO markets (id, question, condition_id, slug, end_date_iso, active, updated_at)
+          VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
           ON CONFLICT (id) DO UPDATE SET
             question = EXCLUDED.question,
             active = EXCLUDED.active,
             updated_at = CURRENT_TIMESTAMP
         `, [
-          raw.id,
-          raw.question,
-          raw.condition_id,
-          raw.slug,
-          raw.resolution_source,
-          raw.end_date_iso,
-          raw.active
+          conditionId,
+          raw.question || normalized.event_title,
+          conditionId,
+          marketSlug,
+          raw.end_date_iso || null,
+          raw.active ?? true
         ]);
 
         // 2. Insert into 'market_snapshots'

@@ -25,6 +25,8 @@ services:
     environment:
       DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/${DB_NAME:-arbitrage_db}
       POLYMARKET_API_URL: ${POLYMARKET_API_URL:-https://clob.polymarket.com}
+      LOG_LEVEL: debug
+      NODE_OPTIONS: --max-old-space-size=1024
     depends_on:
       - db
     command: npm run dev

@@ -8,21 +8,28 @@ export const PolymarketTokenSchema = z.object({
 });
 
 export const PolymarketMarketSchema = z.object({
-  id: z.string(),
-  question: z.string(),
-  condition_id: z.string(),
-  slug: z.string(),
-  resolution_source: z.string().optional().nullable(),
-  end_date_iso: z.string().optional().nullable(),
+  condition_id: z.string().optional(),
+  conditionId: z.string().optional(),
+  question: z.string().optional(),
+  market_slug: z.string().optional(),
+  slug: z.string().optional(),
   active: z.boolean().default(true),
-  tokens: z.array(PolymarketTokenSchema),
+  closed: z.boolean().default(false),
+  tokens: z.array(PolymarketTokenSchema).default([]),
   liquidity: z.coerce.number().optional().nullable(),
-});
+  end_date_iso: z.string().optional().nullable(),
+}).passthrough();
 
-export const PolymarketMarketsResponseSchema = z.object({
-  data: z.array(PolymarketMarketSchema),
-  next_cursor: z.string().optional().nullable(),
-});
+export const PolymarketMarketsResponseSchema = z.union([
+  z.object({
+    data: z.array(PolymarketMarketSchema),
+    next_cursor: z.string().optional().nullable(),
+  }),
+  z.array(PolymarketMarketSchema).transform(data => ({
+    data,
+    next_cursor: null
+  }))
+]);
 
 export type PolymarketToken = z.infer<typeof PolymarketTokenSchema>;
 export type PolymarketMarket = z.infer<typeof PolymarketMarketSchema>;
