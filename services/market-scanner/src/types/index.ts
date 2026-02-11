@@ -37,3 +37,11 @@ export interface NormalizedMarket {
   liquidity: number | null;
   timestamp: string;
 }
+
+export interface ArbitrageOpportunity {
+  market_id: string;
+  yes_price: number | null;
+  no_price: number | null;
+  sum: number | null;
+  deviation: number | null;
+}
